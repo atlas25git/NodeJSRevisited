@@ -1,0 +1,132 @@
+#ExpressJs
+----------
+1. A framework made to help the development on nodeJs such that developers don't have to 
+   re-invent the wheel.
+
+    npm install --save express
+                :production dependecy
+
+    const express = require('express');
+
+#MiddleWare:
+------------
+- These are the simple pluggable pieces of code as functions through which particular requests
+  are funneled before they are returned.
+
+    -const app = express();
+
+    -app.use((req,res,next) => { //first MiddleWare
+        console.log("mW1");
+        next(); //passes control to other MiddleWare in the funnel
+    })
+    
+    -app.use((req,res,next) => {
+        console.log("mW2");
+        res.send('<h1>Response from express</h1>');
+    })
+
+#Routes:
+--------
+- We can define paths for specific routes and these would be executed in top to bottom manner in mw approach
+  of managing control flow, and hence won't continue to latter once the former has been hit, and next hasn't been
+  called.
+
+  -app.use('pathToBeMatched', (req,res,next) => {})
+
+#Parsing Reqs:
+--------------
+- To parse requests we use:
+    - res.redirect('new_path'); //to redirect to a new path
+    - To process headers and other fields in a requests, we use an external package body parser.
+    - And register it as a middleware as:
+        - app.use(bodyParser.urlencoded()); //registers the middleware, should be placed at the very top.
+        - parses the bodies and implicitly runs next. 
+        - stores the body features as key:value pairs.
+
+#Filtering app.use for HTTP verbs:
+----------------------------------
+- app.use()  basically gets triggered for all the type of requests, be it any http verb.
+- To filter the middleware's execution for particular requests, we can run the following:  
+    - app.get/put/post/patch
+
+#Express router:
+----------------
+- Basically as our app grows to add modularity to it we introduce router, what this does is that
+  in a seperate file router class's object is created, this registers the functionality and exports it.
+- Replaces all the instances of app with router.
+- Router is basically a miniature version of express.
+- Directory Structure:
+    Routes\
+        \admin.js
+        \shop.js
+    app.js
+
+- Code:
+    - app.js:
+
+            const bodyParser = require('body-parser');
+            const express = require('express');
+
+            const app = express();
+
+            const adminRoutes = require('./routes/admin');
+            const shopRoutes = require('./routes/shop');
+
+            app.use(bodyParser.urlencoded({extended: false}));
+
+            app.use(adminRoutes);
+            app.use(shopRoutes);
+
+            app.listen(3000);
+
+    - admin.js
+
+            const express = require('express');
+
+            const router = express.Router();
+
+            router.get('/add-product', (req, res, next) => {
+              res.send(
+                '<form action="/product" method="POST"><input type="text" name="title"><button type="submit">Add Product</button></form>'
+              );
+            });
+
+            router.post('/product', (req, res, next) => {
+              console.log(req.body);
+              res.redirect('/');
+            });
+
+            module.exports = router;
+    
+    - shop.js
+
+            const express = require('express');
+
+            const router = express.Router();
+
+            router.get('/', (req, res, next) => {
+              res.send('<h1>Hello from Express!</h1>');
+            });
+
+            module.exports = router;
+
+#Handling bad requests:
+-----------------------
+- We can basically add a catch all listener which would, help us manage the bad reqs made.
+
+    - app.use((req,res,next) => {
+            res.status(404).send('<h1>Page not found</h1>');
+        });
+
+#Sending Files:
+---------------
+- path.join implicitly works for all the contingencies, let's say on windows '/' are used and on linux
+  based systems '\' are used/
+
+    -router.get('/add-product',(req,res,next) => {
+        res.sendFile(path.join(__dirname,'../'.'views','add-product.html'));
+    })
+
+#Serving Static files:
+----------------------
+-   app.use(express.static(path.join(__dirname, 'public'))); //though read only access

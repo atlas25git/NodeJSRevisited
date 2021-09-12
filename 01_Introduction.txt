@@ -1,0 +1,173 @@
+NodeJS:
+-------
+1. V8 engine based runtime env which helps us run the javascript 
+   functionaliy as experienced on browser, on server or our local 
+   machine.
+2. JS Runtime
+3. In php apache does the task of listening to incoming requests,
+   but node does it all.
+
+File System:
+-----------
+
+    const fs = require('fs');
+    fs.writeFileSync('filename.txt','txtto be written');
+
+Setting up a server:
+--------------------
+
+app.js ->
+---------
+    - core modules:
+        1. http     : launch server, send req.
+        2. https    : launch ssl server
+        3. fs
+        4. path
+        5. os
+
+const http = require('http'); //in the case of user modules it starts with './module_name'
+
+//req res are provided by default by nodeJs
+
+function rqListener(req, res) {
+
+}
+
+//now rqListener will be run for every requests on the server.
+http.createServer(rqListener);
+
+//alternative way of writing
+//this now returns a server
+
+const server = http.createServer((req,res) => {
+    console.log(req); 
+    //To stop event loop after first execution
+    //process.exit();
+})
+
+server.listen(3000);
+
+//cmd: node app.js
+//now the terminal runs it in a continuous manner hence we can't write any more code, unless the server is closed.
+
+Node LifeCycle & Event Loop:
+----------------------------
+The node application runs an event loop which is not stopped untill there's a single event listener registered.
+In the above case it was the function(anonymous) that we'd passed which was listening to requests.
+NodeJS uses single threaded process.
+Multi threading happens to an extent.
+
+
+Requets:
+--------
+NodeJs creates the request object.
+Some useful fns:
+    - req.url
+    - req.method
+    - req.headers
+
+Responses:
+----------
+    //header will be set for the requests
+    res.seHeader('Content-Type', 'text/html');
+    res.write('<html>');
+    //other lines
+    res.write('</html>');
+    res.end(); //nodejs will now send it back as response to req
+
+Routing:
+---------
+
+const http = require('http');
+const fs = require('fs');
+
+//streams and buffer:
+    - input is broken into buffer, which helps holding us a chunk of segments.
+    - so we need to process the data from the stream
+    - lets say we're to deal with a big file being uploaded, it'd be a tiring process to first
+         - recieve it completely and then process it, hence the buffers are employed to help.
+
+
+const server = http.createServer((req, res) => {
+  const url = req.url;
+  const method = req.method;
+
+  if (url === '/') {
+
+    res.write('<html>');
+    res.write('<head><title>Enter Message</title><head>');
+    res.write('<body><form action="/message" method="POST"><input type="text" name="message"><button type="submit">Send</button></form></body>');
+    res.write('</html>');
+
+    //used return to stop the control flow
+    return res.end();
+  }
+  if (url === '/message' && method === 'POST') {
+    
+    const body = [];
+
+    req.on('data', (chunk) => {
+        console.log(chunk);
+        body.push(chunk);
+    });
+
+    //on reaching here the control flow doesn't stops and wait
+    //rather it just register the listener and continues on with the
+    //processig of program continuation.
+
+    req.on('end',()=>{
+        const parsedBody = Buffer.concat(body).toString();
+        console.log(parsedBody);
+        const message = parsedBody.split('=')[1];
+        fs.writeFileSync('message.txt', message);
+    });
+
+    
+    res.statusCode = 302;
+    res.setHeader('Location', '/');
+    return res.end();
+  }
+  res.setHeader('Content-Type', 'text/html');
+  res.write('<html>');
+  res.write('<head><title>My First Page</title><head>');
+  res.write('<body><h1>Hello from my Node.js Server!</h1></body>');
+  res.write('</html>');
+  res.end();
+});
+
+server.listen(3000);
+
+//All this above was at length because we were using naive nodeJs, that's why expressJs
+//is used to cut down on the verbosity.
+
+Blocking And Non-Blocking Code:
+-------------------------------
+For multiple or micro nihed event listeners, nodeJs just assigns them to OS and returns to them
+once they are triggered hence in virtue non-Blocking mode of exeution, or known as event driven archtitecture.
+
+NodeJS runs the event loop perpetually, and thus the callbacks are handled.
+The fast finishing operations are executed by the event loops, and the long processor bound operations are sent
+to the worker pool, where diff threads may be assigned to the tasks.
+Once this worker pool is done with the task, it'll trigger the callback for the event loop, and hence event loop's is exec.
+
+Event Loop:
+-----------
+    - Timers
+    - Pending CallBacks -r/w,i/o
+    - Poll
+    - Check: setImmidiate
+    - Close CallBacks
+
+Node Module Systems:
+--------------------
+    - module.exports = functionName;
+    - exported objects are read only, we may create setters.
+    - module.exports = {
+        key : value,
+        key : value
+    };
+
+NPM scripts the known ones could just be run using: 
+    - node scriptName
+    For the user defined:
+        - node run scriptName
